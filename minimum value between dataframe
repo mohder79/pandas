@@ -1,0 +1,86 @@
+import numpy as np
+import ccxt
+import pandas as pd
+from datetime import datetime
+import pandas_ta as pta  # visit https://github.com/twopirllc/pandas-ta
+
+
+exchange = ccxt.bybit({
+    'options': {
+        'adjustForTimeDifference': True,
+    },
+
+})
+symbol = 'BTC/USDT:USDT'  # my symbol
+
+print(f"Fetching new bars for {datetime.now().isoformat()}")
+bars = exchange.fetch_ohlcv(symbol, timeframe='1m', limit=500)  # fetch ohlcv
+df = pd.DataFrame(bars[:-1], columns=['timestamp',
+                  'open', 'high', 'low', 'close', 'volume'])
+df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+
+df['rsi'] = pta.rsi(df.close, 14)
+
+df['open_rsi'] = pta.rsi(df.open, 14)
+
+df['min'] = df[['rsi', 'open_rsi']].min(axis=1)
+
+print(df)
+
+#more example from  https://thispointer.com/pandas-dataframe-get-minimum-values-in-rows-or-columns-their-index-position/
+
+
+
+def main():
+    # List of Tuples
+    matrix = [(22, 16, 23),
+              (33, np.NaN, 11),
+              (44, 34, 11),
+              (55, 35, np.NaN),
+              (66, 36, 13)
+              ]
+    # Create a DataFrame object
+    dfObj = pd.DataFrame(matrix, index=list('abcde'), columns=list('xyz'))
+    print('Original Dataframe Contents :')
+    print(dfObj)
+    print('***** Get minimum value in every column ***** ')
+    # Get a series containing minimum value of each column
+    minValuesObj = dfObj.min()
+    print('minimum value in each column : ')
+    print(minValuesObj)
+    print('***** Get minimum value in every row ***** ')
+    # Get a series containing minimum value of each row
+    minValuesObj = dfObj.min(axis=1)
+    print('minimum value in each row : ')
+    print(minValuesObj)
+    print('***** Get minimum value in every column without skipping NaN ***** ')
+    # Get a series containing minimum value of each column without skipping NaN
+    minValuesObj = dfObj.min(skipna=False)
+    print('minimum value in each column including NaN: ')
+    print(minValuesObj)
+    print('***** Get minimum value in a single column ***** ')
+    # Get minimum value of a single column 'y'
+    minValue = dfObj['y'].min()
+    print("minimum value in column 'y': ", minValue)
+    # Get minimum value of a single column 'y'
+    minValue = dfObj.min()['y']
+    print("minimum value in column 'y': ", minValue)
+    print('***** Get minimum value in certain columns only ***** ')
+    # Get minimum value of a single column 'y'
+    minValue = dfObj[['y', 'z']].min()
+    print("minimum value in column 'y' & 'z': ")
+    print(minValue)
+    print('***** Get row index label of minimum value in every column *****')
+    # get the index position of min values in every column
+    minValueIndexObj = dfObj.idxmin()
+    print("min values of columns are at row index position :")
+    print(minValueIndexObj)
+    print('***** Get Column name of minimum value in every row *****')
+    # get the column name of min values in every row
+    minValueIndexObj = dfObj.idxmin(axis=1)
+    print("min values of row are at following columns :")
+    print(minValueIndexObj)
+
+
+if __name__ == '__main__':
+    main()
