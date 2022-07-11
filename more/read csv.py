@@ -10,6 +10,9 @@ df = pd.read_csv(data, sep=',', usecols=Columns, header=1)
 # usecols = your column
 # header = Row number(s) to use as the column names, and the start of the data
 
-df = df[::-1].copy() # reverse data . in csv file data start 2022 t0 2014 , so last data is 2014 .
+df = df[::-1].copy() # reverse data . in csv file data start 2022 t0 2014 , so last data is 2014 . 
+
+df = df[::-1].reset_index(drop=True) # like line 13 but in this code we dont reverse number of rows 
+
 
 print(df)
