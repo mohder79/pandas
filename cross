@@ -1,0 +1,78 @@
+# { import the libraries
+from cProfile import label
+import ccxt
+from datetime import datetime
+import pandas as pd
+import pandas_ta as ta
+import numpy as np
+from matplotlib import pyplot as plt
+# }
+
+# { show all rows and column
+pd.set_option('display.max_rows', None)
+#pd.set_option('display.max_column', None)
+# }
+
+# { load exchange
+exchange = ccxt.bybit({
+    'options': {
+        'adjustForTimeDifference': True,
+    },
+
+})
+# }
+
+
+# { load data as function
+def fetch(symbol: str, timeframe: str, limit: int):
+    print(f"Fetching {symbol} new bars for {datetime.now().isoformat()}")
+
+    bars = exchange.fetch_ohlcv(
+        symbol, timeframe=timeframe, limit=limit)  # fetch ohlcv
+    df = pd.DataFrame(bars[:-1], columns=['timestamp',
+                      'open', 'high', 'low', 'close', 'volume'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    df = df.set_index(pd.DatetimeIndex(df.timestamp))
+    return df
+# }
+
+
+# { set the symbol for data function
+BTC = fetch('BTC/USDT:USDT', '1d', 200)
+# }
+
+
+# use ta lib for calculate sma 10
+BTC['fast ema'] = ta.sma(BTC.close, 10)
+
+# use ta lib for calculate sma 20
+BTC['slow ema'] = ta.sma(BTC.close, 20)
+
+
+# { finde crosses
+BTC.loc[(BTC['fast ema'] > BTC['slow ema']), 'signal'] = 1
+
+BTC.loc[(BTC['fast ema'] < BTC['slow ema']), 'signal'] = 0
+
+BTC['position'] = BTC['signal'].diff()
+
+BTC['long'] = np.where((BTC['position']) == 1, BTC.close, np.NAN)
+BTC['short'] = np.where((BTC['position']) == -1, BTC.close, np.NAN)
+# }
+
+# print(BTC)
+
+
+# { plot the data
+plt.plot(BTC.close, label='closes price')
+plt.plot(BTC['fast ema'], label='fast ema')
+plt.plot(BTC['slow ema'], label='slow ema')
+plt.scatter(BTC.index, BTC.long, alpha=1,
+            marker="^", label='long signal', color='green')
+plt.scatter(BTC.index, BTC.short, alpha=1,
+            marker="v", label='short signal', color='red')
+plt.xlabel('time')
+plt.ylabel('price')
+plt.legend()
+plt.show()
+# }
